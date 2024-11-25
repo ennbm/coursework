@@ -1,0 +1,219 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "User and Admin Authentication API",
+      "description": "API для реєстрації, логіну та адміністрування користувачів і доступних днів та годин для запису.",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:3000",
+        "description": "Локальний сервер"
+      }
+    ],
+    "paths": {
+      "/register": {
+        "post": {
+          "summary": "Реєстрація нового користувача/адміністратора",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string",
+                      "minLength": 5
+                    },
+                    "password": {
+                      "type": "string",
+                      "minLength": 8
+                    },
+                    "role": {
+                      "type": "string",
+                      "default": "user"
+                    }
+                  },
+                  "required": ["username", "password"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Користувача зареєстровано"
+            },
+            "400": {
+              "description": "Невірні дані"
+            },
+            "500": {
+              "description": "Помилка серверу"
+            }
+          }
+        }
+      },
+      "/login": {
+        "post": {
+          "summary": "Логін користувача/адміністратора",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string"
+                    },
+                    "password": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["username", "password"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Токен успішно отримано",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "token": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Неправильне ім'я користувача або пароль"
+            },
+            "500": {
+              "description": "Помилка серверу"
+            }
+          }
+        }
+      },
+      "/logout": {
+        "post": {
+          "summary": "Логаут користувача/адміністратора",
+          "responses": {
+            "200": {
+              "description": "Успішний вихід із системи"
+            }
+          }
+        }
+      },
+      "/admin/free_days": {
+        "post": {
+          "summary": "Додавання доступних днів для запису (для адміністраторів)",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "is_available": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["date", "is_available"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "День додано"
+            },
+            "400": {
+              "description": "Невірні дані"
+            },
+            "403": {
+              "description": "Доступ заборонено"
+            },
+            "500": {
+              "description": "Помилка серверу"
+            }
+          }
+        }
+      },
+      "/admin/free_hours": {
+        "post": {
+          "summary": "Додавання доступних годин в день для запису (для адміністраторів)",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "time": {
+                      "type": "string",
+                      "format": "time"
+                    },
+                    "is_available": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["date", "time", "is_available"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Година додана"
+            },
+            "400": {
+              "description": "Невірні дані"
+            },
+            "404": {
+              "description": "Цей день не знайдений"
+            },
+            "403": {
+              "description": "Доступ заборонено"
+            },
+            "500": {
+              "description": "Помилка серверу"
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      }
+    }
+  }
+  

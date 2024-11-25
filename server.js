@@ -64,7 +64,7 @@ const authenticateToken = (requiredRoles = []) => async (req, res, next) => {
     });
 };
 
-// Реєстрація нового користувача
+// реєстрація нового користувача\адміністратора
 app.post('/register', [
     body('username').isLength({ min: 5 }).withMessage('Ім\'я повинно бути не менше 5 символів'),
     body('password').isLength({ min: 8 }).withMessage('Пароль повинен бути не менше 8 символів'),
@@ -87,7 +87,7 @@ app.post('/register', [
     }
 });
 
-// Логін користувача
+// логін користувача\адміністратора
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     const query = 'SELECT * FROM users WHERE username = ?';
@@ -112,16 +112,70 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Логаут користувача
+// логаут користувача\адміністратора
 app.post('/logout', (req, res) => {
     const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
     if (token) {
-        blacklistedTokens.add(token); // Додаємо токен до чорного списку
+        blacklistedTokens.add(token); // додаємо токен до чорного списку
     }
     res.status(200).json({ message: 'Успішний вихід із системи' });
 });
 
-// Запускаємо сервер.
+// можливість додававання доступних днів для запису 
+// виключно для адміністраторів
+app.post('/admin/free_days', authenticateToken(['admin']), async (req, res) => {
+    const { date, is_available } = req.body;
+
+    if (!date || is_available === undefined) {
+        return res.status(400).json({ message: 'Дата та доступність повинні бути заповнені.' });
+    }
+
+    const query = 'INSERT INTO free_days (date, is_available) VALUES (?, ?)';
+
+    try {
+        const [result] = await getConnection().then((connection) =>
+            connection.execute(query, [date, is_available])
+        );
+        res.send('День додано');
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+
+// можливість додававання доступних годин в дні для запису 
+// виключно для адміністраторів.
+app.post('/admin/free_hours', authenticateToken(['admin']), async (req, res) => {
+    const { date, time, is_available } = req.body;
+
+    if (!date || !time || is_available === undefined) {
+        return res.status(400).json({ message: 'Дата, час та доступність повинні бути заповнені.' });
+    }
+
+    // перевірка на доступний день у таблиці бази даних.
+    const queryDay = 'SELECT id FROM free_days WHERE date = ?';
+    const [dayResult] = await getConnection().then((connection) =>
+        connection.execute(queryDay, [date])
+    );
+
+    if (dayResult.length === 0) {
+        return res.status(404).json({ message: 'Цей день не знайдений у таблиці free_days.' });
+    }
+
+    const freeDayId = dayResult[0].id;
+
+    const queryHour = 'INSERT INTO free_hours (free_day_id, time, is_available) VALUES (?, ?, ?)';
+    try {
+        await getConnection().then((connection) =>
+            connection.execute(queryHour, [freeDayId, time, is_available])
+        );
+        res.send('Година додана для цього дня');
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+// запускаємо сервер.
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Сервер запущено на порту ${PORT}`);
