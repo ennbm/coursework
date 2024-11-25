@@ -207,6 +207,85 @@ app.get('/free_hours', async (req, res) => {
     }
 });
 
+// можливість додавання нової послуги виключно для адміністраторів.
+
+app.post('/admin/services', authenticateToken(['admin']), [
+    body('name').isLength({ min: 3 }).withMessage('Назва послуги повинна бути не менше 3 символів'),
+    body('description').isLength({ min: 5 }).withMessage('Опис послуги повинний бути не менше 5 символів'),
+    body('price').isFloat({ min: 0 }).withMessage('Ціна повинна бути числом більшим за 0'),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, description, price } = req.body;
+
+    const query = 'INSERT INTO services (name, description, price) VALUES (?, ?, ?)';
+
+    try {
+        await getConnection().then((connection) =>
+            connection.execute(query, [name, description, price])
+        );
+        res.send('Нова послуга додана');
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+// можливість оновлення вже існуючої послуги виключно для адміністраторів.
+
+app.put('/admin/services/:id', authenticateToken(['admin']), [
+    body('name').optional().isLength({ min: 3 }).withMessage('Назва послуги повинна бути не менше 3 символів'),
+    body('description').optional().isLength({ min: 5 }).withMessage('Опис послуги повинний бути не менше 5 символів'),
+    body('price').optional().isFloat({ min: 0 }).withMessage('Ціна повинна бути числом більшим за 0'),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, description, price } = req.body;
+    const { id } = req.params; // id послуги, яку потрібно оновити.
+
+    const queryCheckService = 'SELECT * FROM services WHERE id = ?';
+    const [serviceResult] = await getConnection().then((connection) =>
+        connection.execute(queryCheckService, [id])
+    );
+
+    if (serviceResult.length === 0) {
+        return res.status(404).json({ message: 'Послугу не знайдено' });
+    }
+
+    const queryUpdateService = `
+        UPDATE services
+        SET name = COALESCE(?, name), description = COALESCE(?, description), price = COALESCE(?, price)
+        WHERE id = ?
+    `;
+
+    try {
+        await getConnection().then((connection) =>
+            connection.execute(queryUpdateService, [name, description, price, id])
+        );
+        res.send('Послугу оновлено');
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+// отримання послуг (доступно для всіх авторизованих користувачів).
+app.get('/services', authenticateToken(), async (req, res) => {
+    const query = 'SELECT * FROM services';
+
+    try {
+        const [rows] = await getConnection().then((connection) => connection.execute(query));
+        res.json(rows);
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+
 // запускаємо сервер.
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
