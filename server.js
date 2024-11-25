@@ -175,6 +175,38 @@ app.post('/admin/free_hours', authenticateToken(['admin']), async (req, res) => 
     }
 });
 
+// можливість перегляду доступних днів для запису.
+app.get('/free_days', authenticateToken(['user', 'admin']), async (req, res) => {
+    const query = 'SELECT * FROM free_days;';
+    try {
+        const [results] = await getConnection().then((connection) =>
+            connection.execute(query)
+        );
+
+        console.log('Free days results:', results);  // Логування результатів запиту
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Немає доступних днів.' });
+        }
+
+        res.json(results);  // Повернення доступних днів
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
+// можливість перегляду доступних годин для запису.
+app.get('/free_hours', async (req, res) => {
+    const query = 'SELECT * FROM free_hours';
+
+    try {
+        const [rows] = await getConnection().then((connection) => connection.execute(query));
+        res.json(rows);
+    } catch (error) {
+        handleError(res, error);
+    }
+});
+
 // запускаємо сервер.
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
