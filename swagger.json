@@ -1,21 +1,21 @@
 {
     "openapi": "3.0.0",
     "info": {
-      "title": "API для пірсингу",
-      "description": "API для реєстрації користувачів, управління доступними днями та годинами для запису на послуги пірсингу.",
-      "version": "1.0.0"
+      "title": "Piercing Service API",
+      "version": "1.0.0",
+      "description": "API для управління записами на пірсинг-сервіси"
     },
     "servers": [
       {
-        "url": "http://localhost:3000"
+        "url": "http://localhost:3000",
+        "description": "Локальний сервер"
       }
     ],
     "paths": {
       "/register": {
         "post": {
           "summary": "Реєстрація нового користувача/адміністратора",
-          "operationId": "register",
-          "tags": ["Auth"],
+          "operationId": "registerUser",
           "requestBody": {
             "required": true,
             "content": {
@@ -25,32 +25,32 @@
                   "properties": {
                     "username": {
                       "type": "string",
-                      "minLength": 5
+                      "example": "user123"
                     },
                     "password": {
                       "type": "string",
-                      "minLength": 8
+                      "example": "password123"
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "admin"],
-                      "default": "user"
+                      "example": "user",
+                      "enum": ["user", "admin"]
                     }
                   },
                   "required": ["username", "password"]
                 }
               }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Користувача зареєстровано"
             },
-            "400": {
-              "description": "Невірний формат запиту"
-            },
-            "500": {
-              "description": "Виникла помилка на сервері"
+            "responses": {
+              "200": {
+                "description": "Користувач зареєстрований"
+              },
+              "400": {
+                "description": "Невірні дані"
+              },
+              "500": {
+                "description": "Внутрішня помилка сервера"
+              }
             }
           }
         }
@@ -58,8 +58,7 @@
       "/login": {
         "post": {
           "summary": "Логін користувача/адміністратора",
-          "operationId": "login",
-          "tags": ["Auth"],
+          "operationId": "loginUser",
           "requestBody": {
             "required": true,
             "content": {
@@ -68,38 +67,41 @@
                   "type": "object",
                   "properties": {
                     "username": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "user123"
                     },
                     "password": {
-                      "type": "string"
+                      "type": "string",
+                      "example": "password123"
                     }
                   },
                   "required": ["username", "password"]
                 }
               }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Успішний логін",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "token": {
-                        "type": "string"
+            },
+            "responses": {
+              "200": {
+                "description": "Успішний логін",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "example": "jwt_token_here"
+                        }
                       }
                     }
                   }
                 }
+              },
+              "401": {
+                "description": "Неправильне ім'я користувача або пароль"
+              },
+              "500": {
+                "description": "Внутрішня помилка сервера"
               }
-            },
-            "401": {
-              "description": "Неправильне ім'я користувача або пароль"
-            },
-            "500": {
-              "description": "Виникла помилка на сервері"
             }
           }
         }
@@ -107,23 +109,26 @@
       "/logout": {
         "post": {
           "summary": "Логаут користувача/адміністратора",
-          "operationId": "logout",
-          "tags": ["Auth"],
+          "operationId": "logoutUser",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
           "responses": {
             "200": {
-              "description": "Успішний вихід з системи"
+              "description": "Успішний вихід"
             },
-            "500": {
-              "description": "Виникла помилка на сервері"
+            "401": {
+              "description": "Неавторизований"
             }
           }
         }
       },
       "/admin/free_days": {
         "post": {
-          "summary": "Додавання доступних днів для запису (тільки для адміністраторів)",
-          "operationId": "addFreeDays",
-          "tags": ["Admin"],
+          "summary": "Додавання доступних днів для запису (тільки для адміністратора)",
+          "operationId": "addFreeDay",
           "security": [
             {
               "bearerAuth": []
@@ -138,38 +143,39 @@
                   "properties": {
                     "date": {
                       "type": "string",
-                      "format": "date"
+                      "format": "date",
+                      "example": "2024-12-01"
                     },
                     "is_available": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     }
                   },
                   "required": ["date", "is_available"]
                 }
               }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "День додано"
             },
-            "400": {
-              "description": "Не заповнені необхідні поля"
-            },
-            "403": {
-              "description": "Недостатньо прав для виконання"
-            },
-            "500": {
-              "description": "Виникла помилка на сервері"
+            "responses": {
+              "200": {
+                "description": "День додано"
+              },
+              "400": {
+                "description": "Невірні дані"
+              },
+              "403": {
+                "description": "Недостатньо прав"
+              },
+              "500": {
+                "description": "Внутрішня помилка сервера"
+              }
             }
           }
         }
       },
       "/admin/free_hours": {
         "post": {
-          "summary": "Додавання доступних годин для запису (тільки для адміністраторів)",
-          "operationId": "addFreeHours",
-          "tags": ["Admin"],
+          "summary": "Додавання доступних годин для запису (тільки для адміністратора)",
+          "operationId": "addFreeHour",
           "security": [
             {
               "bearerAuth": []
@@ -184,45 +190,46 @@
                   "properties": {
                     "date": {
                       "type": "string",
-                      "format": "date"
+                      "format": "date",
+                      "example": "2024-12-01"
                     },
                     "time": {
                       "type": "string",
-                      "format": "time"
+                      "example": "14:00"
                     },
                     "is_available": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     }
                   },
                   "required": ["date", "time", "is_available"]
                 }
               }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Година додана"
             },
-            "400": {
-              "description": "Не заповнені необхідні поля"
-            },
-            "404": {
-              "description": "День не знайдений"
-            },
-            "403": {
-              "description": "Недостатньо прав для виконання"
-            },
-            "500": {
-              "description": "Виникла помилка на сервері"
+            "responses": {
+              "200": {
+                "description": "Година додана"
+              },
+              "400": {
+                "description": "Невірні дані"
+              },
+              "403": {
+                "description": "Недостатньо прав"
+              },
+              "404": {
+                "description": "День не знайдено"
+              },
+              "500": {
+                "description": "Внутрішня помилка сервера"
+              }
             }
           }
         }
       },
       "/free_days": {
         "get": {
-          "summary": "Перегляд доступних днів для запису",
+          "summary": "Отримання доступних днів для запису",
           "operationId": "getFreeDays",
-          "tags": ["User"],
           "security": [
             {
               "bearerAuth": []
@@ -230,75 +237,84 @@
           ],
           "responses": {
             "200": {
-              "description": "Перелік доступних днів",
+              "description": "Список доступних днів",
               "content": {
                 "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "date": {
-                          "type": "string",
-                          "format": "date"
-                        },
-                        "is_available": {
-                          "type": "boolean"
-                        }
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-12-01"
+                      },
+                      "is_available": {
+                        "type": "boolean",
+                        "example": true
                       }
                     }
                   }
                 }
               }
             },
-            "404": {
-              "description": "Немає доступних днів"
+            "401": {
+              "description": "Неавторизований доступ"
             },
             "500": {
-              "description": "Виникла помилка на сервері"
+              "description": "Внутрішня помилка сервера"
             }
           }
         }
       },
-      "/free_hours": {
+      "/services": {
         "get": {
-          "summary": "Перегляд доступних годин для запису",
-          "operationId": "getFreeHours",
-          "tags": ["User"],
+          "summary": "Отримання всіх доступних послуг",
+          "operationId": "getServices",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
           "responses": {
             "200": {
-              "description": "Перелік доступних годин",
+              "description": "Список доступних послуг",
               "content": {
                 "application/json": {
-                  "schema": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "integer"
-                        },
-                        "free_day_id": {
-                          "type": "integer"
-                        },
-                        "time": {
-                          "type": "string",
-                          "format": "time"
-                        },
-                        "is_available": {
-                          "type": "boolean"
-                        }
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "name": {
+                        "type": "string",
+                        "example": "Пірсинг вуха"
+                      },
+                      "description": {
+                        "type": "string",
+                        "example": "Опис послуги"
+                      },
+                      "price": {
+                        "type": "number",
+                        "example": 300
                       }
                     }
                   }
                 }
               }
             },
+            "401": {
+              "description": "Неавторизований доступ"
+            },
             "500": {
-              "description": "Виникла помилка на сервері"
+              "description": "Внутрішня помилка сервера"
             }
           }
         }

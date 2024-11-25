@@ -285,6 +285,56 @@ app.get('/services', authenticateToken(), async (req, res) => {
     }
 });
 
+//маршрут для створення користувачем запису на послугу
+app.post('/appointments', authenticateToken(['user']), async (req, res) => {
+    const { serviceName, date, time } = req.body; 
+    const userId = req.user.id;
+
+    try {
+        
+        const queryService = 'SELECT id FROM services WHERE name = ?';
+        const [serviceResult] = await getConnection().then((connection) => 
+            connection.execute(queryService, [serviceName])
+        );
+
+        if (serviceResult.length === 0) {
+            return res.status(404).json({ message: 'Послуга не знайдена.' });
+        }
+
+        const serviceId = serviceResult[0].id;
+
+        const queryDay = 'SELECT id FROM free_days WHERE date = ? AND is_available = 1';
+        const [dayResult] = await getConnection().then((connection) => 
+            connection.execute(queryDay, [date])
+        );
+
+        if (dayResult.length === 0) {
+            return res.status(404).json({ message: 'День недоступний.' });
+        }
+
+        const freeDayId = dayResult[0].id;
+
+        const queryHour = 'SELECT id FROM free_hours WHERE free_day_id = ? AND time = ? AND is_available = 1';
+        const [hourResult] = await getConnection().then((connection) => 
+            connection.execute(queryHour, [freeDayId, time])
+        );
+
+        if (hourResult.length === 0) {
+            return res.status(404).json({ message: 'Вибраний час або день недоступні.' });
+        }
+
+        const freeHourId = hourResult[0].id;
+
+        const queryAppointment = 'INSERT INTO appointments (user_id, service_id, free_hour_id) VALUES (?, ?, ?)';
+        await getConnection().then((connection) =>
+            connection.execute(queryAppointment, [userId, serviceId, freeHourId])
+        );
+
+        res.send('Запис створено');
+    } catch (error) {
+        handleError(res, error);
+    }
+});
 
 // запускаємо сервер.
 const PORT = process.env.PORT || 3000;
